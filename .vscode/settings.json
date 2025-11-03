@@ -1,0 +1,32 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "prettier.requireConfig": true,
+
+  // ✅ Validación de JavaScript/TypeScript
+  "javascript.validate.enable": true,
+  "typescript.validate.enable": true,
+  "javascript.suggestionActions.enabled": true,
+
+  // ✅ ESLint
+  "eslint.enable": true,
+  "eslint.format.enable": false, // Prettier formatea, ESLint solo valida
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // Formatters por lenguaje
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
