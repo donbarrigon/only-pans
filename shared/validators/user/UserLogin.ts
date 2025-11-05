@@ -5,7 +5,7 @@ export const UserLogin = v.object({
     v.string('El email debe ser una cadena de texto'),
     v.nonEmpty('El email no puede estar vacío'),
     v.email('El formato del email no es válido'),
-    v.max(254, 'El email debe tener como máximo 254 caracteres')
+    v.maxLength(254, 'El email debe tener como máximo 254 caracteres')
   ),
   password: v.pipe(
     v.string('La contraseña debe ser una cadena de texto'),
@@ -13,3 +13,6 @@ export const UserLogin = v.object({
     v.maxLength(32, 'La contraseña debe tener como máximo 32 caracteres')
   ),
 })
+
+export type UserLoginInput = v.InferInput<typeof UserLogin>
+export type UserLoginOutput = v.InferOutput<typeof UserLogin>

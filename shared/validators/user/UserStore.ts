@@ -24,16 +24,15 @@ export const UserStore = v.object({
     v.minLength(2, 'El nickname debe tener al menos 2 caracteres'),
     v.maxLength(32, 'El nickname debe tener como máximo 32 caracteres')
   ),
-  phone: v.pipe(
-    v.string('El teléfono debe ser una cadena de texto'),
-    v.nullable(),
-    v.minLength(2, 'El teléfono debe tener al menos 2 caracteres'),
-    v.maxLength(32, 'El teléfono debe tener como máximo 32 caracteres'),
-    v.regex(/^\+?[\d\s]{7,20}$/, 'El Teléfono no es válido')
+  phone: v.nullable(
+    v.pipe(
+      v.string('El teléfono debe ser una cadena de texto'),
+      v.minLength(2, 'El teléfono debe tener al menos 2 caracteres'),
+      v.maxLength(32, 'El teléfono debe tener como máximo 32 caracteres'),
+      v.regex(/^\+?[\d\s]{7,20}$/, 'El Teléfono no es válido')
+    )
   ),
 })
 
-export async function validateUserStore(data) {
-  const result = await v.validate(UserStore, data)
-  return result
-}
+export type UserStoreInput = v.InferInput<typeof UserStore>
+export type UserStoreOutput = v.InferOutput<typeof UserStore>
