@@ -2,7 +2,7 @@
 const errorMessages: Record<number, string> = {
   400: 'La información enviada no es válida',
   401: 'Necesitas iniciar sesión para continuar',
-  403: 'No tienes permiso para acceder a esto',
+  403: 'No tienes permiso para realizar esta acción',
   404: 'No pudimos encontrar lo que buscas',
   405: 'Método HTTP no permitido',
   406: 'El contenido solicitado no es aceptable',
@@ -31,7 +31,7 @@ const errorMessages: Record<number, string> = {
 
 /**
  * Lanza un error HTTP estandarizado
- * @param e Error, string, number o unknown
+ * @param e Error, string o number
  * @param statusCode Código HTTP opcional (por defecto 500)
  * @param customMessage Mensaje personalizado opcional
  */
@@ -76,75 +76,165 @@ export function httpError(e?: unknown, statusCode?: number, customMessage?: stri
 //                  🧱 Errores 4xx (Cliente)
 // ================================================================
 
-export function badRequestError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 400 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function badRequestError(e?: unknown, message?: string): never {
   httpError(e, 400, message)
 }
 
-export function unauthorizedError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 401 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function unauthorizedError(e?: unknown, message?: string): never {
   httpError(e, 401, message)
 }
 
-export function forbiddenError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 403 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function forbiddenError(e?: unknown, message?: string): never {
   httpError(e, 403, message)
 }
 
-export function notFoundError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 404 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function notFoundError(e?: unknown, message?: string): never {
   httpError(e, 404, message)
 }
 
-export function methodNotAllowedError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 405 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function methodNotAllowedError(e?: unknown, message?: string): never {
   httpError(e, 405, message)
 }
 
-export function notAcceptableError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 406 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function notAcceptableError(e?: unknown, message?: string): never {
   httpError(e, 406, message)
 }
 
-export function requestTimeoutError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 408 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function requestTimeoutError(e?: unknown, message?: string): never {
   httpError(e, 408, message)
 }
 
-export function conflictError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 409 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function conflictError(e?: unknown, message?: string): never {
   httpError(e, 409, message)
 }
 
-export function goneError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 410 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function goneError(e?: unknown, message?: string): never {
   httpError(e, 410, message)
 }
 
-export function preconditionFailedError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 412 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function preconditionFailedError(e?: unknown, message?: string): never {
   httpError(e, 412, message)
 }
 
-export function unsupportedMediaTypeError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 415 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function unsupportedMediaTypeError(e?: unknown, message?: string): never {
   httpError(e, 415, message)
 }
 
-export function teapotError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 418 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function teapotError(e?: unknown, message?: string): never {
   httpError(e, 418, message)
 }
 
-export function unprocessableEntityError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 422 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function unprocessableEntityError(e?: unknown, message?: string): never {
   httpError(e, 422, message)
 }
 
-export function tooEarlyError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 425 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function tooEarlyError(e?: unknown, message?: string): never {
   httpError(e, 425, message)
 }
 
-export function upgradeRequiredError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 426 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function upgradeRequiredError(e?: unknown, message?: string): never {
   httpError(e, 426, message)
 }
 
-export function tooManyRequestsError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 429 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function tooManyRequestsError(e?: unknown, message?: string): never {
   httpError(e, 429, message)
 }
 
-export function requestHeaderFieldsTooLargeError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 431 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function requestHeaderFieldsTooLargeError(e?: unknown, message?: string): never {
   httpError(e, 431, message)
 }
 
-export function unavailableForLegalReasonsError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 451 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function unavailableForLegalReasonsError(e?: unknown, message?: string): never {
   httpError(e, 451, message)
 }
 
@@ -152,6 +242,11 @@ export function unavailableForLegalReasonsError(e: unknown, message?: string): n
 //                    🧱 Errores 5xx (Servidor)
 // ================================================================
 
+/**
+ * Lanza un error 500 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
 export function internalError(e?: unknown, message?: string): never {
   if (!e) {
     httpError(500)
@@ -159,35 +254,87 @@ export function internalError(e?: unknown, message?: string): never {
   httpError(e, 500, message)
 }
 
-export function notImplementedError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 501 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function notImplementedError(e?: unknown, message?: string): never {
   httpError(e, 501, message)
 }
 
-export function badGatewayError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 502 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function badGatewayError(e?: unknown, message?: string): never {
   httpError(e, 502, message)
 }
 
-export function serviceUnavailableError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 503 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function serviceUnavailableError(e?: unknown, message?: string): never {
   httpError(e, 503, message)
 }
 
-export function gatewayTimeoutError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 504 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function gatewayTimeoutError(e?: unknown, message?: string): never {
   httpError(e, 504, message)
 }
 
-export function httpVersionNotSupportedError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 505 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function httpVersionNotSupportedError(e?: unknown, message?: string): never {
   httpError(e, 505, message)
 }
 
-export function insufficientStorageError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 506 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function variantAlsoNegotiatesError(e?: unknown, message?: string): never {
+  httpError(e, 506, message)
+}
+
+/**
+ * Lanza un error 507 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function insufficientStorageError(e?: unknown, message?: string): never {
   httpError(e, 507, message)
 }
 
-export function loopDetectedError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 508 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function loopDetectedError(e?: unknown, message?: string): never {
   httpError(e, 508, message)
 }
 
-export function networkAuthenticationRequiredError(e: unknown, message?: string): never {
+/**
+ * Lanza un error 509 estandarizado
+ * @param e Error, string o number
+ * @param message Mensaje personalizado opcional
+ */
+export function bandwidthLimitExceededError(e?: unknown, message?: string): never {
+  httpError(e, 509, message)
+}
+export function networkAuthenticationRequiredError(e?: unknown, message?: string): never {
   httpError(e, 511, message)
 }
 

@@ -1,92 +1,52 @@
-import type { IUser } from '../../models/User'
 import type { H3Event } from 'h3'
+import { getRequestIP, getRequestHeader } from 'h3'
 import { hexToken } from './token'
-import { decode, encode, ExtensionCodec } from '@msgpack/msgpack'
-import { internalError, unauthorizedError } from '../error/error'
+import { decode, encode } from '@msgpack/msgpack'
+import { forbiddenError, internalError, unauthorizedError } from '../error/error'
+import { extensionCodec } from '../fetch/extensionCodec'
 import { ObjectId } from 'mongodb'
+
+export interface ISessionUser {
+  _id: ObjectId | undefined
+  roles: Set<string>
+  permissions: Set<string>
+}
 
 export type Session = {
   token: string
-  user: IUser
+  user: ISessionUser
   ip: string
   agent: string
   lang: string
+  referer: string
   fingerprint: string
   createdAt: Date
   updatedAt: Date
   expiresAt: Date
 }
 
-const extensionCodec = new ExtensionCodec()
+// ================================================================
+//                     ENVIRONMENT VARIABLES
+// ================================================================
 
-// Registrar manejo de fechas (tipo 0)
-extensionCodec.register({
-  type: 0,
-  encode: (input: unknown) => {
-    if (input instanceof Date) {
-      const buffer = new ArrayBuffer(8)
-      const view = new DataView(buffer)
-      view.setFloat64(0, input.getTime())
-      return new Uint8Array(buffer)
-    }
-    return null
-  },
-  decode: (data: Uint8Array) => {
-    const view = new DataView(data.buffer)
-    const timestamp = view.getFloat64(0)
-    return new Date(timestamp)
-  },
-})
+const sessionLife = process.env.SESSION_LIFE ? Number(process.env.SESSION_LIFE) : 1000 * 60 * 60 * 24
+const secure = process.env.NODE_ENV === 'production'
 
-// Registrar manejo de ObjectId (tipo 1)
-extensionCodec.register({
-  type: 1,
-  encode: (input: unknown) => {
-    if (input instanceof ObjectId) {
-      // Convertir a string hexadecimal (24 caracteres)
-      const hexString = input.toHexString()
-      return new TextEncoder().encode(hexString)
-    }
-    return null
-  },
-  decode: (data: Uint8Array) => {
-    // Reconstruir ObjectId desde el string
-    const hexString = new TextDecoder().decode(data)
-    return new ObjectId(hexString)
-  },
-})
+// ================================================================
+//                      FUNCION DE LA SESSION
+// ================================================================
 
-// Registrar manejo de Sets (tipo 2)
-extensionCodec.register({
-  type: 2,
-  encode: (input: unknown) => {
-    if (input instanceof Set) {
-      // Convertir el Set a array y codificarlo
-      const array = Array.from(input)
-      return encode(array, { extensionCodec })
-    }
-    return null
-  },
-  decode: (data: Uint8Array) => {
-    // Decodificar el array y convertirlo de vuelta a Set
-    const array = decode(data, { extensionCodec }) as unknown[]
-    return new Set(array)
-  },
-})
-
-export async function sessionStart(event: H3Event, user: IUser): Promise<Session> {
-  const ip = getRequestIP(event) || 'unknown'
-  const agent = getRequestHeader(event, 'user-agent') || 'unknown'
-  const lang = getRequestHeader(event, 'accept-language') || 'unknown'
-  const fingerprint = getRequestHeader(event, 'x-fingerprint') || 'unknown'
+export async function sessionStart(event: H3Event, user: ISessionUser): Promise<Session> {
+  const sh = sessionHeaders(event)
 
   const session: Session = {
     token: hexToken(),
     user,
-    ip,
-    agent,
-    lang,
-    fingerprint,
+    ip: sh.ip,
+    agent: sh.agent,
+    lang: sh.lang,
+    referer: sh.referer,
+    fingerprint: sh.fingerprint,
     createdAt: new Date(),
     updatedAt: new Date(),
     expiresAt: new Date(),
@@ -96,9 +56,29 @@ export async function sessionStart(event: H3Event, user: IUser): Promise<Session
   return session
 }
 
+export function sessionHeaders(event: H3Event): {
+  ip: string
+  agent: string
+  lang: string
+  referer: string
+  fingerprint: string
+} {
+  const ip = getRequestIP(event) || 'unknown'
+  const agent = getRequestHeader(event, 'user-agent') || 'unknown'
+  const lang = getRequestHeader(event, 'accept-language') || 'unknown'
+  const fingerprint = getRequestHeader(event, 'x-fingerprint') || 'unknown'
+  const referer = getRequestHeader(event, 'referer') || 'unknown'
+  return {
+    ip,
+    agent,
+    lang,
+    referer,
+    fingerprint,
+  }
+}
+
 export async function saveSession(session: Session): Promise<void> {
-  const config = useRuntimeConfig()
-  session.expiresAt = new Date(Date.now() + config.sessionLife)
+  session.expiresAt = new Date(Date.now() + sessionLife)
   await saveToken(session)
   await saveIndex(session)
 }
@@ -203,6 +183,50 @@ async function removeIndex(token: string, userId: string): Promise<void> {
     } catch (e) {
       internalError(e, `Hubo un problema al remover el índice de la sesión`)
     }
+  }
+}
+
+export function can(session: Session, permission: string): void {
+  if (!session.user.permissions.has(permission)) {
+    forbiddenError()
+  }
+}
+
+export function canAny(session: Session, permissions: string[]): void {
+  for (const permission of permissions) {
+    if (session.user.permissions.has(permission)) {
+      return
+    }
+  }
+  forbiddenError()
+}
+
+export function hasRole(session: Session, role: string): void {
+  if (!session.user.roles.has(role)) {
+    forbiddenError()
+  }
+}
+
+// esta es una copia de un tipo de h3 que no se puede importar
+interface CookieSerializeOptions {
+  domain?: string
+  encode?(value: string): string
+  expires?: Date
+  httpOnly?: boolean
+  maxAge?: number
+  path?: string
+  priority?: 'low' | 'medium' | 'high'
+  sameSite?: true | false | 'lax' | 'strict' | 'none'
+  secure?: boolean
+}
+
+export function getCookieSerializeOptions(): CookieSerializeOptions {
+  return {
+    httpOnly: true,
+    secure: secure,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: sessionLife,
   }
 }
 

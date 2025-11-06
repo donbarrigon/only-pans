@@ -2,6 +2,7 @@ import * as v from 'valibot'
 import { decode } from '@msgpack/msgpack'
 import type { H3Event } from 'h3'
 import { readRawBody, createError } from 'h3'
+import { extensionCodec } from '../fetch/extensionCodec'
 
 /**
  * Valida el cuerpo de una petición en formato msgpack
@@ -11,7 +12,7 @@ import { readRawBody, createError } from 'h3'
  * @returns Los datos validados
  * @throws Error si el cuerpo no es válido o está mal formateado
  */
-export async function validateBody<T>(event: H3Event, validator: v.GenericSchema<T, T>): Promise<T> {
+export async function validateBufferBody<T>(event: H3Event, validator: v.GenericSchema<T, T>): Promise<T> {
   const rawBody = await readRawBody(event, false)
 
   if (!rawBody) {
@@ -23,7 +24,7 @@ export async function validateBody<T>(event: H3Event, validator: v.GenericSchema
 
   let body: unknown
   try {
-    body = decode(rawBody)
+    body = decode(rawBody, { extensionCodec: extensionCodec })
   } catch (e) {
     const error = e as Error
     throw createError({
