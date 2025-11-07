@@ -1,6 +1,8 @@
 import type { GenericSchema } from 'valibot'
 import { safeParse } from 'valibot'
-import type { H3Event } from 'h3'
+import { type H3Event, readBody, createError } from 'h3'
+import { badRequestError } from '../error/error'
+import { Result, ok, err } from '../error/result'
 
 /**
  * Valida el cuerpo de una petición en formato json
@@ -10,28 +12,27 @@ import type { H3Event } from 'h3'
  * @returns Los datos validados
  * @throws Error si el cuerpo no es válido o está mal formateado
  */
-export async function validateBody<T>(event: H3Event, validator: GenericSchema<T, T>): Promise<T> {
+export async function validateBody<T>(event: H3Event, validator: GenericSchema<T, T>): Promise<Result<T>> {
   const rawBody = await readBody(event)
 
   if (!rawBody) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'No fue posible leer el cuerpo de la petición',
-    })
+    return badRequestError('No fue posible leer el cuerpo de la petición')
   }
 
   const result = safeParse(validator, rawBody)
 
   if (result.success) {
-    return result.output
+    return ok(result.output)
   }
 
-  throw createError({
-    statusCode: 422,
-    statusMessage: 'Los datos enviados no son válidos',
-    data: result.issues.map(issue => ({
-      field: issue.path?.[0]?.key,
-      message: issue.message,
-    })),
-  })
+  throw err(
+    createError({
+      statusCode: 422,
+      statusMessage: 'Los datos enviados no son válidos',
+      data: result.issues.map(issue => ({
+        field: issue.path?.[0]?.key,
+        message: issue.message,
+      })),
+    })
+  )
 }

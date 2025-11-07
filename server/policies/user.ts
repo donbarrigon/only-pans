@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import type { Session } from '~~/utils/auth/Session'
-import { auth } from '~~/utils/auth/policy'
-import { forbiddenError } from '~~/utils/error/error'
+import { auth } from '~~/utils_old/auth/policy'
+import { forbiddenError } from '~~/utils_old/error/error'
 
 export async function UserViewAnyPolicy(event: H3Event): Promise<Session> {
   return await auth(event, 'view-any user')

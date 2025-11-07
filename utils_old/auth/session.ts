@@ -5,7 +5,6 @@ import { decode, encode } from '@msgpack/msgpack'
 import { forbiddenError, internalError, unauthorizedError } from '../error/error'
 import { extensionCodec } from '../fetch/extensionCodec'
 import { ObjectId } from 'mongodb'
-import { ok, okVoid, Result } from '../error/result'
 
 export interface ISessionUser {
   _id: ObjectId | undefined
@@ -37,7 +36,7 @@ const secure = process.env.NODE_ENV === 'production'
 //                      FUNCION DE LA SESSION
 // ================================================================
 
-export async function sessionStart(event: H3Event, user: ISessionUser): Promise<Result<Session>> {
+export async function sessionStart(event: H3Event, user: ISessionUser): Promise<Session> {
   const sh = sessionHeaders(event)
 
   const session: Session = {
@@ -53,11 +52,8 @@ export async function sessionStart(event: H3Event, user: ISessionUser): Promise<
     expiresAt: new Date(),
   }
 
-  const r = await saveSession(session)
-  if (r.hasError) {
-    return r
-  }
-  return ok(session)
+  await saveSession(session)
+  return session
 }
 
 export function sessionHeaders(event: H3Event): {
@@ -81,68 +77,60 @@ export function sessionHeaders(event: H3Event): {
   }
 }
 
-export async function saveSession(session: Session): Promise<Result<void>> {
+export async function saveSession(session: Session): Promise<void> {
   session.expiresAt = new Date(Date.now() + sessionLife)
   await saveToken(session)
   await saveIndex(session)
-  return okVoid
 }
 
-async function saveToken(session: Session): Promise<Result<void>> {
+async function saveToken(session: Session): Promise<void> {
   const encoded = encode(session, { extensionCodec })
   const filePath = tokenFilePath(session.token)
   try {
     await Bun.write(filePath, encoded)
-    return okVoid
   } catch (e) {
-    return internalError(e, 'No pudimos crear tu sesión')
+    internalError(e, 'No pudimos crear tu sesión')
   }
 }
 
-async function saveIndex(session: Session): Promise<Result<void>> {
+async function saveIndex(session: Session): Promise<void> {
   if (!session.user._id) {
-    return internalError('El usuario no tiene id')
+    internalError('El usuario no tiene id')
   }
   const tokens = await getUserTokens(session.user._id.toHexString())
-  if (tokens.hasError) {
-    return tokens
+  if (!tokens.includes(session.token)) {
+    tokens.push(session.token)
   }
-  if (!tokens.value.includes(session.token)) {
-    tokens.value.push(session.token)
-  }
-
   const filePath = userFilePath(session.user._id.toHexString())
-
+  const encoded = encode(tokens)
   try {
-    const encoded = encode(tokens)
     await Bun.write(filePath, encoded)
-    return okVoid
   } catch (e) {
-    return internalError(e, `No se creó la sessión ${session.token}`)
+    internalError(e, `No se creó la sesión ${session.token}`)
   }
 }
 
-export async function getUserTokens(userId: string): Promise<Result<string[]>> {
+export async function getUserTokens(userId: string): Promise<string[]> {
   const filePath = userFilePath(userId)
   try {
     const file = Bun.file(filePath)
     if (!(await file.exists())) {
-      return ok([])
+      return []
     }
     const buffer = await file.bytes()
     const decoded = decode(buffer) as string[]
-    return ok(decoded)
+    return decoded
   } catch (e) {
-    return internalError(e, 'No fue posible obtener las sesiones del usuario')
+    internalError(e, 'No fue posible obtener las sesiones del usuario')
   }
 }
 
-export async function getSession(id: string): Promise<Result<Session>> {
+export async function getSession(id: string): Promise<Session> {
   const filePath = tokenFilePath(id)
   const file = Bun.file(filePath)
 
   if (!(await file.exists())) {
-    return unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
+    unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
   }
 
   let buffer: Uint8Array
@@ -152,83 +140,71 @@ export async function getSession(id: string): Promise<Result<Session>> {
     buffer = await file.bytes()
     decoded = decode(buffer, { extensionCodec }) as Session
   } catch (e) {
+    console.error(e)
     await file.unlink()
-    return unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
+    unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
   }
 
   if (decoded.expiresAt < new Date()) {
     await file.unlink()
-    return unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
+    unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
   }
 
-  const r = await saveSession(decoded)
-  if (r.hasError) {
-    return r
-  }
-  return ok(decoded)
+  await saveSession(decoded)
+  return decoded
 }
 
-export async function destroySession(session: Session): Promise<Result<void>> {
+export async function destroySession(session: Session): Promise<void> {
   if (!session.user._id) {
-    return internalError('El usuario de la sesión no tiene id')
+    internalError('El usuario de la sesión no tiene id')
   }
   const filePath = tokenFilePath(session.token)
 
-  const r = await removeIndex(session.token, session.user._id.toHexString())
-  if (r.hasError) {
-    return r
-  }
+  await removeIndex(session.token, session.user._id.toHexString())
   try {
     const file = Bun.file(filePath)
     if (await file.exists()) {
       await file.unlink()
     }
-    return okVoid
   } catch (e) {
-    return internalError(e, `Hubo un problema al cerrar la sesión`)
+    internalError(e, `Hubo un problema al cerrar la sesión`)
   }
 }
 
-async function removeIndex(token: string, userId: string): Promise<Result<void>> {
+async function removeIndex(token: string, userId: string): Promise<void> {
   const tokens = await getUserTokens(userId)
-  if (tokens.hasError) {
-    return tokens
-  }
-  const index = tokens.value.indexOf(token)
+  const index = tokens.indexOf(token)
   if (index > -1) {
-    tokens.value.splice(index, 1)
+    tokens.splice(index, 1)
     const filePath = userFilePath(userId)
+    const encoded = encode(tokens)
     try {
-      const encoded = encode(tokens)
       await Bun.write(filePath, encoded)
     } catch (e) {
-      return internalError(e, `Hubo un problema al remover el índice de la sesión`)
+      internalError(e, `Hubo un problema al remover el índice de la sesión`)
     }
   }
-  return okVoid
 }
 
-export function can(session: Session, permission: string): Result<void> {
+export function can(session: Session, permission: string): void {
   if (!session.user.permissions.has(permission)) {
-    return forbiddenError()
+    forbiddenError()
   }
-  return okVoid
 }
 
-export function canAny(session: Session, permissions: string[]): Result<void> {
+export function canAny(session: Session, permissions: string[]): void {
   for (const permission of permissions) {
     if (session.user.permissions.has(permission)) {
-      return okVoid
+      return
     }
   }
-  return forbiddenError()
+  forbiddenError()
 }
 
-export function hasRole(session: Session, role: string): Result<void> {
+export function hasRole(session: Session, role: string): void {
   if (!session.user.roles.has(role)) {
-    return forbiddenError()
+    forbiddenError()
   }
-  return okVoid
 }
 
 // esta es una copia de un tipo de h3 que no se puede importar

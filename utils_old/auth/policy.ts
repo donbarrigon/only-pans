@@ -3,11 +3,10 @@ import { getCookie, getHeader } from 'h3'
 import { sessionHeaders, getSession } from './session'
 import { unauthorizedError } from '../error/error'
 import { type Session, can } from './session'
-import { ok, Result } from '../error/result'
 
 const minScore = process.env.SESSION_MIN_SCORE ? Number(process.env.SESSION_MIN_SCORE) : 3
 
-export async function auth(event: H3Event, permission?: string): Promise<Result<Session>> {
+export async function auth(event: H3Event, permission?: string): Promise<Session> {
   let token: string | undefined
   const tkc = getCookie(event, 'session')
 
@@ -53,5 +52,5 @@ export async function auth(event: H3Event, permission?: string): Promise<Result<
   if (permission) {
     can(session, permission)
   }
-  return ok(session)
+  return session
 }

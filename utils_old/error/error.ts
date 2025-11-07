@@ -1,6 +1,3 @@
-import { type H3Error, createError } from 'h3'
-import { Err } from './result'
-
 // Map de mensajes estándar de errores HTTP
 const errorMessages: Record<number, string> = {
   400: 'La información enviada no es válida',
@@ -38,7 +35,7 @@ const errorMessages: Record<number, string> = {
  * @param statusCode Código HTTP opcional (por defecto 500)
  * @param customMessage Mensaje personalizado opcional
  */
-export function httpError(e?: unknown, statusCode?: number, customMessage?: string): Err {
+export function httpError(e?: unknown, statusCode?: number, customMessage?: string): never {
   // Si e es un número, interpretarlo como statusCode
   if (typeof e === 'number') {
     statusCode = errorMessages[e] ? e : 500
@@ -49,40 +46,31 @@ export function httpError(e?: unknown, statusCode?: number, customMessage?: stri
   const isFatal = code >= 500
 
   if (e instanceof Error) {
-    return {
-      hasError: true,
-      error: createError({
-        statusCode: code,
-        statusMessage: message,
-        message: e.message,
-        stack: e.stack,
-        cause: e.cause,
-        fatal: isFatal,
-        name: e.name,
-      }),
-    }
+    throw createError({
+      statusCode: code,
+      statusMessage: message,
+      message: e.message,
+      stack: e.stack,
+      cause: e.cause,
+      fatal: isFatal,
+      name: e.name,
+    })
   }
 
   if (typeof e === 'string') {
-    return {
-      hasError: true,
-      error: createError({
-        statusCode: code,
-        statusMessage: e, // mensaje personalizado
-        message: message, // mensaje predeterminado por rellenar
-        fatal: isFatal,
-      }),
-    }
+    throw createError({
+      statusCode: code,
+      statusMessage: e, // mensaje personalizado
+      message: message, // mensaje predeterminado por rellenar
+      fatal: isFatal,
+    })
   }
 
-  return {
-    hasError: true,
-    error: createError({
-      statusCode: code,
-      statusMessage: message,
-      fatal: isFatal,
-    }),
-  }
+  throw createError({
+    statusCode: code,
+    statusMessage: message,
+    fatal: isFatal,
+  })
 }
 // ================================================================
 //                  🧱 Errores 4xx (Cliente)
@@ -93,8 +81,8 @@ export function httpError(e?: unknown, statusCode?: number, customMessage?: stri
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function badRequestError(e?: unknown, message?: string): Err {
-  return httpError(e, 400, message)
+export function badRequestError(e?: unknown, message?: string): never {
+  httpError(e, 400, message)
 }
 
 /**
@@ -102,8 +90,8 @@ export function badRequestError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function unauthorizedError(e?: unknown, message?: string): Err {
-  return httpError(e, 401, message)
+export function unauthorizedError(e?: unknown, message?: string): never {
+  httpError(e, 401, message)
 }
 
 /**
@@ -111,8 +99,8 @@ export function unauthorizedError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function forbiddenError(e?: unknown, message?: string): Err {
-  return httpError(e, 403, message)
+export function forbiddenError(e?: unknown, message?: string): never {
+  httpError(e, 403, message)
 }
 
 /**
@@ -120,8 +108,8 @@ export function forbiddenError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function notFoundError(e?: unknown, message?: string): Err {
-  return httpError(e, 404, message)
+export function notFoundError(e?: unknown, message?: string): never {
+  httpError(e, 404, message)
 }
 
 /**
@@ -129,8 +117,8 @@ export function notFoundError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function methodNotAllowedError(e?: unknown, message?: string): Err {
-  return httpError(e, 405, message)
+export function methodNotAllowedError(e?: unknown, message?: string): never {
+  httpError(e, 405, message)
 }
 
 /**
@@ -138,8 +126,8 @@ export function methodNotAllowedError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function notAcceptableError(e?: unknown, message?: string): Err {
-  return httpError(e, 406, message)
+export function notAcceptableError(e?: unknown, message?: string): never {
+  httpError(e, 406, message)
 }
 
 /**
@@ -147,8 +135,8 @@ export function notAcceptableError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function requestTimeoutError(e?: unknown, message?: string): Err {
-  return httpError(e, 408, message)
+export function requestTimeoutError(e?: unknown, message?: string): never {
+  httpError(e, 408, message)
 }
 
 /**
@@ -156,8 +144,8 @@ export function requestTimeoutError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function conflictError(e?: unknown, message?: string): Err {
-  return httpError(e, 409, message)
+export function conflictError(e?: unknown, message?: string): never {
+  httpError(e, 409, message)
 }
 
 /**
@@ -165,8 +153,8 @@ export function conflictError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function goneError(e?: unknown, message?: string): Err {
-  return httpError(e, 410, message)
+export function goneError(e?: unknown, message?: string): never {
+  httpError(e, 410, message)
 }
 
 /**
@@ -174,8 +162,8 @@ export function goneError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function preconditionFailedError(e?: unknown, message?: string): Err {
-  return httpError(e, 412, message)
+export function preconditionFailedError(e?: unknown, message?: string): never {
+  httpError(e, 412, message)
 }
 
 /**
@@ -183,8 +171,8 @@ export function preconditionFailedError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function unsupportedMediaTypeError(e?: unknown, message?: string): Err {
-  return httpError(e, 415, message)
+export function unsupportedMediaTypeError(e?: unknown, message?: string): never {
+  httpError(e, 415, message)
 }
 
 /**
@@ -192,8 +180,8 @@ export function unsupportedMediaTypeError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function teapotError(e?: unknown, message?: string): Err {
-  return httpError(e, 418, message)
+export function teapotError(e?: unknown, message?: string): never {
+  httpError(e, 418, message)
 }
 
 /**
@@ -201,8 +189,8 @@ export function teapotError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function unprocessableEntityError(e?: unknown, message?: string): Err {
-  return httpError(e, 422, message)
+export function unprocessableEntityError(e?: unknown, message?: string): never {
+  httpError(e, 422, message)
 }
 
 /**
@@ -210,8 +198,8 @@ export function unprocessableEntityError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function tooEarlyError(e?: unknown, message?: string): Err {
-  return httpError(e, 425, message)
+export function tooEarlyError(e?: unknown, message?: string): never {
+  httpError(e, 425, message)
 }
 
 /**
@@ -219,8 +207,8 @@ export function tooEarlyError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function upgradeRequiredError(e?: unknown, message?: string): Err {
-  return httpError(e, 426, message)
+export function upgradeRequiredError(e?: unknown, message?: string): never {
+  httpError(e, 426, message)
 }
 
 /**
@@ -228,8 +216,8 @@ export function upgradeRequiredError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function tooManyRequestsError(e?: unknown, message?: string): Err {
-  return httpError(e, 429, message)
+export function tooManyRequestsError(e?: unknown, message?: string): never {
+  httpError(e, 429, message)
 }
 
 /**
@@ -237,8 +225,8 @@ export function tooManyRequestsError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function requestHeaderFieldsTooLargeError(e?: unknown, message?: string): Err {
-  return httpError(e, 431, message)
+export function requestHeaderFieldsTooLargeError(e?: unknown, message?: string): never {
+  httpError(e, 431, message)
 }
 
 /**
@@ -246,8 +234,8 @@ export function requestHeaderFieldsTooLargeError(e?: unknown, message?: string):
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function unavailableForLegalReasonsError(e?: unknown, message?: string): Err {
-  return httpError(e, 451, message)
+export function unavailableForLegalReasonsError(e?: unknown, message?: string): never {
+  httpError(e, 451, message)
 }
 
 // ================================================================
@@ -259,11 +247,11 @@ export function unavailableForLegalReasonsError(e?: unknown, message?: string): 
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function internalError(e?: unknown, message?: string): Err {
+export function internalError(e?: unknown, message?: string): never {
   if (!e) {
     httpError(500)
   }
-  return httpError(e, 500, message)
+  httpError(e, 500, message)
 }
 
 /**
@@ -271,8 +259,8 @@ export function internalError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function notImplementedError(e?: unknown, message?: string): Err {
-  return httpError(e, 501, message)
+export function notImplementedError(e?: unknown, message?: string): never {
+  httpError(e, 501, message)
 }
 
 /**
@@ -280,8 +268,8 @@ export function notImplementedError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function badGatewayError(e?: unknown, message?: string): Err {
-  return httpError(e, 502, message)
+export function badGatewayError(e?: unknown, message?: string): never {
+  httpError(e, 502, message)
 }
 
 /**
@@ -289,8 +277,8 @@ export function badGatewayError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function serviceUnavailableError(e?: unknown, message?: string): Err {
-  return httpError(e, 503, message)
+export function serviceUnavailableError(e?: unknown, message?: string): never {
+  httpError(e, 503, message)
 }
 
 /**
@@ -298,8 +286,8 @@ export function serviceUnavailableError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function gatewayTimeoutError(e?: unknown, message?: string): Err {
-  return httpError(e, 504, message)
+export function gatewayTimeoutError(e?: unknown, message?: string): never {
+  httpError(e, 504, message)
 }
 
 /**
@@ -307,8 +295,8 @@ export function gatewayTimeoutError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function httpVersionNotSupportedError(e?: unknown, message?: string): Err {
-  return httpError(e, 505, message)
+export function httpVersionNotSupportedError(e?: unknown, message?: string): never {
+  httpError(e, 505, message)
 }
 
 /**
@@ -316,8 +304,8 @@ export function httpVersionNotSupportedError(e?: unknown, message?: string): Err
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function variantAlsoNegotiatesError(e?: unknown, message?: string): Err {
-  return httpError(e, 506, message)
+export function variantAlsoNegotiatesError(e?: unknown, message?: string): never {
+  httpError(e, 506, message)
 }
 
 /**
@@ -325,8 +313,8 @@ export function variantAlsoNegotiatesError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function insufficientStorageError(e?: unknown, message?: string): Err {
-  return httpError(e, 507, message)
+export function insufficientStorageError(e?: unknown, message?: string): never {
+  httpError(e, 507, message)
 }
 
 /**
@@ -334,8 +322,8 @@ export function insufficientStorageError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function loopDetectedError(e?: unknown, message?: string): Err {
-  return httpError(e, 508, message)
+export function loopDetectedError(e?: unknown, message?: string): never {
+  httpError(e, 508, message)
 }
 
 /**
@@ -343,11 +331,11 @@ export function loopDetectedError(e?: unknown, message?: string): Err {
  * @param e Error, string o number
  * @param message Mensaje personalizado opcional
  */
-export function bandwidthLimitExceededError(e?: unknown, message?: string): Err {
-  return httpError(e, 509, message)
+export function bandwidthLimitExceededError(e?: unknown, message?: string): never {
+  httpError(e, 509, message)
 }
-export function networkAuthenticationRequiredError(e?: unknown, message?: string): Err {
-  return httpError(e, 511, message)
+export function networkAuthenticationRequiredError(e?: unknown, message?: string): never {
+  httpError(e, 511, message)
 }
 
 // ================================================================
@@ -358,10 +346,10 @@ export function networkAuthenticationRequiredError(e?: unknown, message?: string
  * Convierte errores de MongoDB en errores HTTP apropiados
  * @param e - Error de MongoDB
  */
-export function mongoError(e: unknown): Err {
+export function mongoError(e: unknown): never {
   // Si no hay error, lanzar error interno genérico
   if (!e) {
-    return internalError(new Error('Unknown database error'), 'Error desconocido en la base de datos')
+    internalError(new Error('Unknown database error'), 'Error desconocido en la base de datos')
   }
 
   // Extraer propiedades del error si es un objeto
@@ -372,108 +360,108 @@ export function mongoError(e: unknown): Err {
 
   // --- 1. Errores de duplicidad ---
   if (code === 11000 || code === 11001) {
-    return conflictError(e, 'Este registro ya existe')
+    conflictError(e, 'Este registro ya existe')
   }
 
   // --- 2. Error de validación de esquema ---
   if (code === 121) {
-    return badRequestError(e, 'Los datos no cumplen con el formato esperado')
+    badRequestError(e, 'Los datos no cumplen con el formato esperado')
   }
 
   // --- 3. Document too large ---
   if (code === 10334) {
-    return badRequestError(e, 'Los datos son demasiado grandes')
+    badRequestError(e, 'Los datos son demasiado grandes')
   }
 
   // --- 4. Write concern errors ---
   if (code === 64 || code === 65 || code === 91 || code === 100) {
-    return serviceUnavailableError(e, 'No pudimos guardar los datos, intenta de nuevo')
+    serviceUnavailableError(e, 'No pudimos guardar los datos, intenta de nuevo')
   }
 
   // --- 5. Errores de transacciones ---
   if (code === 251 || code === 244 || code === 112) {
-    return conflictError(e, 'Hubo un problema con la operación, intenta nuevamente')
+    conflictError(e, 'Hubo un problema con la operación, intenta nuevamente')
   }
 
   // --- 6. Namespace no existe ---
   if (code === 26) {
-    return notFoundError(e, 'No encontramos lo que buscabas')
+    notFoundError(e, 'No encontramos lo que buscabas')
   }
 
   // --- 7. Cursor no encontrado ---
   if (code === 43) {
-    return badRequestError(e, 'La búsqueda expiró, por favor intenta de nuevo')
+    badRequestError(e, 'La búsqueda expiró, por favor intenta de nuevo')
   }
 
   // --- 8. Operación interrumpida ---
   if (code === 11601 || code === 11602) {
-    return requestTimeoutError(e, 'La operación tardó demasiado')
+    requestTimeoutError(e, 'La operación tardó demasiado')
   }
 
   // --- 9. MaxTimeMSExpired ---
   if (code === 50) {
-    return requestTimeoutError(e, 'La operación tardó demasiado tiempo')
+    requestTimeoutError(e, 'La operación tardó demasiado tiempo')
   }
 
   // --- 10. Errores de conexión ---
   if (name === 'MongoNetworkError' || name === 'MongoTimeoutError') {
-    return serviceUnavailableError(e, 'No pudimos conectarnos a la base de datos')
+    serviceUnavailableError(e, 'No pudimos conectarnos a la base de datos')
   }
 
   // --- 11. Errores de tipo BSON ---
   if (name === 'BSONTypeError' || name === 'BSONError') {
-    return unprocessableEntityError(e, 'El tipo de dato no es válido')
+    unprocessableEntityError(e, 'El tipo de dato no es válido')
   }
 
   // --- 12. Operación en nodo no primario ---
   if (code === 10058 || code === 13436 || message?.includes('not master') || message?.includes('not primary')) {
-    return serviceUnavailableError(e, 'La base de datos no está disponible en este momento')
+    serviceUnavailableError(e, 'La base de datos no está disponible en este momento')
   }
 
   // --- 13. Errores de autenticación/autorización ---
   if (code === 13 || code === 18) {
-    return unauthorizedError(e, 'No tienes permiso para hacer esto')
+    unauthorizedError(e, 'No tienes permiso para hacer esto')
   }
 
   if (code === 8000 || code === 31) {
-    return forbiddenError(e, 'No puedes realizar esta acción')
+    forbiddenError(e, 'No puedes realizar esta acción')
   }
 
   // --- 14. Error de índice inexistente ---
   if (code === 27 || code === 85) {
-    return badRequestError(e, 'Hay un problema con la configuración de la búsqueda')
+    badRequestError(e, 'Hay un problema con la configuración de la búsqueda')
   }
 
   // --- 15. Comando desconocido ---
   if (code === 59) {
-    return badRequestError(e, 'La operación solicitada no existe')
+    badRequestError(e, 'La operación solicitada no existe')
   }
 
   // --- 16. Límite de memoria excedido ---
   if (code === 292) {
-    return serviceUnavailableError(e, 'La operación necesita demasiados recursos')
+    serviceUnavailableError(e, 'La operación necesita demasiados recursos')
   }
 
   // --- 17. Errores de tipo MongoParseError ---
   if (name === 'MongoParseError') {
-    return badRequestError(e, 'Hubo un problema al procesar la solicitud')
+    badRequestError(e, 'Hubo un problema al procesar la solicitud')
   }
 
   // --- 18. Errores de MongoDB Atlas/AWS ---
   if (name === 'MongoAWSError') {
-    return serviceUnavailableError(e, 'No pudimos autenticarnos con el servicio')
+    serviceUnavailableError(e, 'No pudimos autenticarnos con el servicio')
   }
 
   // --- 19. Errores de TopologyDestroyed ---
   if (name === 'MongoTopologyClosedError') {
-    return serviceUnavailableError(e, 'Perdimos la conexión con la base de datos')
+    serviceUnavailableError(e, 'Perdimos la conexión con la base de datos')
   }
 
   // --- 20. Errores generales de servidor Mongo ---
   if (name === 'MongoServerError' || name === 'MongoError') {
-    return internalError(e, 'Hubo un problema con la base de datos')
+    internalError(e, 'Hubo un problema con la base de datos')
   }
 
   // --- 21. Fallback ---
-  return internalError(e, 'Algo salió mal con la base de datos')
+  internalError(e, 'Algo salió mal con la base de datos')
 }
