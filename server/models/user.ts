@@ -1,7 +1,8 @@
 import type { ObjectId } from 'mongodb'
 import { UserStoreOutput } from '~~/shared/validators/user/UserStore'
-import { dbc } from '~~/utils_old/db/mongo'
-import { conflictError, mongoError } from '~~/utils_old/error/error'
+import { ok, okVoid, Result } from '~~/utils/error/result'
+import { conflictError, mongoError, mongoResultError } from '~~/utils/error/error'
+import { coll } from '~~/server/models/model'
 
 const defaultRoles = new Set<string>(['user'])
 const defaultPermissions = new Set<string>([])
@@ -27,9 +28,7 @@ export interface User {
   deletedAt?: Date
 }
 
-const coll = 'users'
-
-export async function createUser(dto: UserStoreOutput): Promise<User> {
+export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
   const user: User = {
     _id: undefined,
     email: dto.email,
@@ -50,28 +49,34 @@ export async function createUser(dto: UserStoreOutput): Promise<User> {
   }
 
   try {
-    const result = await dbc(coll).insertOne(user)
+    const result = await coll.user.insertOne(user)
+    const r = mongoResultError(result)
+    if (r.hasError) {
+      return r
+    }
     user._id = result.insertedId
-    return user
+    return ok(user)
   } catch (e) {
-    mongoError(e)
+    return mongoError(e)
   }
 }
 
-export async function updateEmail(user: User, email: string): Promise<void> {
-  const col = dbc(coll)
+export async function updateEmail(user: User, email: string): Promise<Result<void>> {
   let u
   try {
-    u = await col.findOne({ email: email, _id: { $ne: user._id } })
+    u = await coll.user.findOne({ email: email, _id: { $ne: user._id } })
+    if (!u) {
+      return conflictError('El email ya existe')
+    }
+    const updatedAt = new Date()
+    const result = await coll.user.updateOne({ _id: user._id }, { $set: { email, updatedAt } })
+    const r = mongoResultError(result)
+    if (r.hasError) {
+      return r
+    }
+    user.email = email
   } catch (e) {
-    mongoError(e)
+    return mongoError(e)
   }
-  if (!u) {
-    return conflictError('El email ya existe')
-  }
-  try {
-    const result = await col.updateOne({ _id: user._id }, { $set: { email } })
-  } catch (e) {
-    mongoError(e)
-  }
+  return okVoid
 }

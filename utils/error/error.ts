@@ -1,5 +1,6 @@
-import { type H3Error, createError } from 'h3'
-import { Err } from './result'
+import { createError } from 'h3'
+import { Err, okVoid, Result } from './result'
+import type { InsertOneResult, UpdateResult, DeleteResult } from 'mongodb'
 
 // Map de mensajes estándar de errores HTTP
 const errorMessages: Record<number, string> = {
@@ -476,4 +477,17 @@ export function mongoError(e: unknown): Err {
 
   // --- 21. Fallback ---
   return internalError(e, 'Algo salió mal con la base de datos')
+}
+
+export function mongoResultError(e: any): Result<void> {
+  if (e?.matchedCount === 0) {
+    return notFoundError(e, 'No encontramos lo que buscabas')
+  }
+  if (e?.modifiedCount === 0) {
+    return unprocessableEntityError(e, 'No hay cambios')
+  }
+  if (e?.deletedCount === 0) {
+    return notFoundError(e, 'Nada para eliminar')
+  }
+  return okVoid
 }
