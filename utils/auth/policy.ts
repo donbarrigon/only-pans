@@ -27,22 +27,25 @@ export async function auth(event: H3Event, permission?: string): Promise<Result<
   }
 
   const session = await getSession(token)
+  if (session.error) {
+    return session
+  }
   const headers = sessionHeaders(event)
   let score = 0
 
-  if (session.ip === headers.ip) {
+  if (session.value.ip === headers.ip) {
     score++
   }
-  if (session.agent === headers.agent) {
+  if (session.value.agent === headers.agent) {
     score++
   }
-  if (session.lang === headers.lang) {
+  if (session.value.lang === headers.lang) {
     score++
   }
-  if (session.referer === headers.referer) {
+  if (session.value.referer === headers.referer) {
     score++
   }
-  if (session.fingerprint === headers.fingerprint) {
+  if (session.value.fingerprint === headers.fingerprint) {
     score++
   }
 
@@ -51,7 +54,10 @@ export async function auth(event: H3Event, permission?: string): Promise<Result<
   }
 
   if (permission) {
-    can(session, permission)
+    const r = can(session.value, permission)
+    if (r.error) {
+      return r
+    }
   }
-  return ok(session)
+  return ok(session.value)
 }

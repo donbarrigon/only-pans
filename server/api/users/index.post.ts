@@ -7,19 +7,19 @@ import { responseError, responseOk } from '~~/utils/response/json'
 
 export default defineEventHandler(async event => {
   const dto = await validateBody(event, UserStore)
-  if (dto.hasError) {
-    return responseError(event, dto.error)
+  if (dto.error) {
+    return responseError(event, dto)
   }
   dto.value.password = await bcrypt.hash(dto.value.password, 10)
 
   const user = await createUser(dto.value)
-  if (user.hasError) {
-    return responseError(event, user.error)
+  if (user.error) {
+    return responseError(event, user)
   }
 
   const session = await sessionStart(event, user.value)
-  if (session.hasError) {
-    return responseError(event, session.error)
+  if (session.error) {
+    return responseError(event, session)
   }
 
   setCookie(event, 'session', session.value.token, getCookieSerializeOptions())

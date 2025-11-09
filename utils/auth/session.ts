@@ -9,8 +9,8 @@ import { ok, okVoid, Result } from '../error/result'
 
 export interface ISessionUser {
   _id: ObjectId | undefined
-  roles: Set<string>
-  permissions: Set<string>
+  roles: string[]
+  permissions: string[]
 }
 
 export type Session = {
@@ -54,7 +54,7 @@ export async function sessionStart(event: H3Event, user: ISessionUser): Promise<
   }
 
   const r = await saveSession(session)
-  if (r.hasError) {
+  if (r.error) {
     return r
   }
   return ok(session)
@@ -104,7 +104,7 @@ async function saveIndex(session: Session): Promise<Result<void>> {
     return internalError('El usuario no tiene id')
   }
   const tokens = await getUserTokens(session.user._id.toHexString())
-  if (tokens.hasError) {
+  if (tokens.error) {
     return tokens
   }
   if (!tokens.value.includes(session.token)) {
@@ -162,7 +162,7 @@ export async function getSession(id: string): Promise<Result<Session>> {
   }
 
   const r = await saveSession(decoded)
-  if (r.hasError) {
+  if (r.error) {
     return r
   }
   return ok(decoded)
@@ -175,7 +175,7 @@ export async function destroySession(session: Session): Promise<Result<void>> {
   const filePath = tokenFilePath(session.token)
 
   const r = await removeIndex(session.token, session.user._id.toHexString())
-  if (r.hasError) {
+  if (r.error) {
     return r
   }
   try {
@@ -191,7 +191,7 @@ export async function destroySession(session: Session): Promise<Result<void>> {
 
 async function removeIndex(token: string, userId: string): Promise<Result<void>> {
   const tokens = await getUserTokens(userId)
-  if (tokens.hasError) {
+  if (tokens.error) {
     return tokens
   }
   const index = tokens.value.indexOf(token)
@@ -209,15 +209,15 @@ async function removeIndex(token: string, userId: string): Promise<Result<void>>
 }
 
 export function can(session: Session, permission: string): Result<void> {
-  if (!session.user.permissions.has(permission)) {
-    return forbiddenError()
+  if (session.user.permissions.includes(permission)) {
+    return okVoid
   }
-  return okVoid
+  return forbiddenError()
 }
 
 export function canAny(session: Session, permissions: string[]): Result<void> {
   for (const permission of permissions) {
-    if (session.user.permissions.has(permission)) {
+    if (session.user.permissions.includes(permission)) {
       return okVoid
     }
   }
@@ -225,10 +225,10 @@ export function canAny(session: Session, permissions: string[]): Result<void> {
 }
 
 export function hasRole(session: Session, role: string): Result<void> {
-  if (!session.user.roles.has(role)) {
-    return forbiddenError()
+  if (session.user.roles.includes(role)) {
+    return okVoid
   }
-  return okVoid
+  return forbiddenError()
 }
 
 // esta es una copia de un tipo de h3 que no se puede importar

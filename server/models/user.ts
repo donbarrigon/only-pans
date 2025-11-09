@@ -4,10 +4,10 @@ import { ok, okVoid, Result } from '~~/utils/error/result'
 import { conflictError, mongoError, mongoResultError } from '~~/utils/error/error'
 import { coll } from '~~/server/models/model'
 
-const defaultRoles = new Set<string>(['user'])
-const defaultPermissions = new Set<string>([])
-const defaultAvatar = ''
-const defaultBanner = ''
+const defaultRoles: string[] = ['user']
+const defaultPermissions: string[] = []
+const defaultAvatar: string = ''
+const defaultBanner: string = ''
 
 export interface User {
   _id: ObjectId | undefined
@@ -20,8 +20,8 @@ export interface User {
     banner: string
     phone: string | null
   }
-  roles: Set<string>
-  permissions: Set<string>
+  roles: string[]
+  permissions: string[]
   emailVerifiedAt?: Date
   createdAt: Date
   updatedAt: Date
@@ -51,7 +51,7 @@ export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
   try {
     const result = await coll.user.insertOne(user)
     const r = mongoResultError(result)
-    if (r.hasError) {
+    if (r.error) {
       return r
     }
     user._id = result.insertedId
@@ -71,10 +71,11 @@ export async function updateEmail(user: User, email: string): Promise<Result<voi
     const updatedAt = new Date()
     const result = await coll.user.updateOne({ _id: user._id }, { $set: { email, updatedAt } })
     const r = mongoResultError(result)
-    if (r.hasError) {
+    if (r.error) {
       return r
     }
     user.email = email
+    user.updatedAt = updatedAt
   } catch (e) {
     return mongoError(e)
   }

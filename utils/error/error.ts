@@ -1,6 +1,5 @@
 import { createError } from 'h3'
 import { Err, okVoid, Result } from './result'
-import type { InsertOneResult, UpdateResult, DeleteResult } from 'mongodb'
 
 // Map de mensajes estándar de errores HTTP
 const errorMessages: Record<number, string> = {
@@ -51,7 +50,7 @@ export function httpError(e?: unknown, statusCode?: number, customMessage?: stri
 
   if (e instanceof Error) {
     return {
-      hasError: true,
+      value: undefined,
       error: createError({
         statusCode: code,
         statusMessage: message,
@@ -66,7 +65,7 @@ export function httpError(e?: unknown, statusCode?: number, customMessage?: stri
 
   if (typeof e === 'string') {
     return {
-      hasError: true,
+      value: undefined,
       error: createError({
         statusCode: code,
         statusMessage: e, // mensaje personalizado
@@ -77,7 +76,7 @@ export function httpError(e?: unknown, statusCode?: number, customMessage?: stri
   }
 
   return {
-    hasError: true,
+    value: undefined,
     error: createError({
       statusCode: code,
       statusMessage: message,
