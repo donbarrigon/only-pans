@@ -1,17 +1,9 @@
-import { ok, okVoid, Result } from '~~/utils/error/result'
-import { coll } from './model'
+import { ok, okVoid, Result } from '~~/shared/utils/error/result'
+import { coll, CollectionType } from './collections'
+import { Trash } from '../../shared/types/models/trash'
+import { mongoError, mongoResultError, notFoundError } from '~~/shared/utils/error/error'
+import { dbc } from '~~/shared/utils/db/mongo'
 import { Collection, ObjectId, WithId } from 'mongodb'
-import { mongoError, mongoResultError, notFoundError } from '~~/utils/error/error'
-import { dbc } from '~~/utils/db/mongo'
-
-export interface Trash<T extends Document = Document> {
-  _id: ObjectId | undefined
-  collection: string
-  document: WithId<T>
-  deletedAt: Date
-}
-
-type CollectionType<T> = T extends Collection<infer U> ? U : never
 
 export async function moveToTrash<C extends Collection>(
   collection: C,

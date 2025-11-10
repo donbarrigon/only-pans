@@ -1,16 +1,23 @@
 import { UserStore } from '~~/shared/validators/user/UserStore'
-import { validateBody } from '~~/utils/validation/json'
-import bcrypt from 'bcrypt'
-import { createUser } from '~~/server/models/user'
-import { sessionStart, getCookieSerializeOptions } from '~~/utils/auth/session'
-import { responseError, responseOk } from '~~/utils/response/json'
+import { validateBody } from '~~/shared/utils/validation/json'
+import { createUser } from '~~/server/repositories/user'
+import { sessionStart, getCookieSerializeOptionsForSession } from '~~/shared/utils/auth/session'
+import { responseError, responseOk } from '~~/shared/utils/response/json'
+import { hashPasswordService } from '~~/server/service/user'
+import { CREATE_ACTION, createHistory } from '~~/server/repositories/history'
+import { coll } from '~~/server/repositories/collections'
 
 export default defineEventHandler(async event => {
   const dto = await validateBody(event, UserStore)
   if (dto.error) {
     return responseError(event, dto)
   }
-  dto.value.password = await bcrypt.hash(dto.value.password, 10)
+
+  const hp = await hashPasswordService(dto.value.password)
+  if (hp.error) {
+    return responseError(event, hp)
+  }
+  dto.value.password = hp.value
 
   const user = await createUser(dto.value)
   if (user.error) {
@@ -22,7 +29,9 @@ export default defineEventHandler(async event => {
     return responseError(event, session)
   }
 
-  setCookie(event, 'session', session.value.token, getCookieSerializeOptions())
+  setCookie(event, 'session', session.value.token, getCookieSerializeOptionsForSession())
+
+  createHistory(coll.user, user.value._id, CREATE_ACTION)
 
   return responseOk(event, session.value)
 })

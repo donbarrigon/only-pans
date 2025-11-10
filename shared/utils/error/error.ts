@@ -1,4 +1,4 @@
-import { createError } from 'h3'
+import { createError, H3Error } from 'h3'
 import { Err, okVoid, Result } from './result'
 
 // Map de mensajes estándar de errores HTTP
@@ -39,6 +39,13 @@ const errorMessages: Record<number, string> = {
  * @param customMessage Mensaje personalizado opcional
  */
 export function httpError(e?: unknown, statusCode?: number, customMessage?: string): Err {
+  if (e instanceof H3Error) {
+    return {
+      value: undefined,
+      error: e,
+    }
+  }
+
   // Si e es un número, interpretarlo como statusCode
   if (typeof e === 'number') {
     statusCode = errorMessages[e] ? e : 500
@@ -203,6 +210,24 @@ export function teapotError(e?: unknown, message?: string): Err {
  */
 export function unprocessableEntityError(e?: unknown, message?: string): Err {
   return httpError(e, 422, message)
+}
+
+type FieldError = { field: string; message: string }
+
+// 🔹 Firmas de sobrecarga
+export function createUnprocessableEntityError(field: string, message: string): Err
+export function createUnprocessableEntityError(data: FieldError[]): Err
+export function createUnprocessableEntityError(arg1: string | FieldError[], arg2?: string): Err {
+  const data: FieldError[] = Array.isArray(arg1) ? arg1 : [{ field: arg1, message: arg2 ?? errorMessages[422] }]
+
+  return {
+    value: undefined,
+    error: createError({
+      statusCode: 422,
+      statusMessage: 'Los datos enviados no son válidos',
+      data,
+    }),
+  }
 }
 
 /**

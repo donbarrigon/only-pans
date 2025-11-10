@@ -244,7 +244,7 @@ interface CookieSerializeOptions {
   secure?: boolean
 }
 
-export function getCookieSerializeOptions(): CookieSerializeOptions {
+export function getCookieSerializeOptionsForSession(): CookieSerializeOptions {
   return {
     httpOnly: true,
     secure: secure,
