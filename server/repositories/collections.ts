@@ -5,6 +5,7 @@ import { User } from '#shared/types/models/user'
 import { History } from '#shared/types/models/history'
 import { Roles } from '#shared/types/models/roles'
 import { Permission } from '#shared/types/models/permissions'
+import { Token } from '~~/shared/types/models/token'
 
 export type CollectionType<T> = T extends Collection<infer U> ? U : never
 
@@ -12,6 +13,7 @@ export const coll = {
   user: db.collection<User>('users'),
   role: db.collection<Roles>('roles'),
   permission: db.collection<Permission>('permissions'),
+  token: db.collection<Token>('tokens'),
   trash: db.collection<Trash>('trash'),
   history: db.collection<History>('history'),
 }

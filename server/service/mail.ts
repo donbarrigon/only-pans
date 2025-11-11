@@ -1,0 +1,85 @@
+import nodemailer from 'nodemailer'
+import { User } from '~~/shared/types/models/user'
+import { newToken } from '../repositories/token'
+import { ok, Result } from '~~/shared/utils/error/result'
+import { internalError } from '~~/shared/utils/error/error'
+import SMTPTransport from 'nodemailer/lib/smtp-transport'
+
+const appName = process.env.APP_NAME ?? 'My App'
+const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
+
+const host: string = process.env.MAIL_HOST ?? 'localhost'
+const port: number = process.env.MAIL_PORT ? Number(process.env.MAIL_PORT) : 587
+const secure: boolean = process.env.MAIL_SECURE === 'true'
+const auth: { user: string; pass: string } = {
+  user: process.env.MAIL_USER ?? 'donbarrigon',
+  pass: process.env.MAIL_PASS ?? '1234567890',
+}
+const fromName: string = process.env.MAIL_FROM_NAME ?? 'Don Barrigon'
+const fromEmail: string = process.env.MAIL_FROM ?? 'donbarrigon@gamail.com'
+const from: string = `${fromName} <${fromEmail}>`
+
+export async function sendEmail(
+  to: string[],
+  subject: string,
+  body: string
+): Promise<Result<SMTPTransport.SentMessageInfo>> {
+  // Create a test account or replace with real credentials.
+  const transporter = nodemailer.createTransport({
+    host: host,
+    port: port,
+    secure: secure, // true for 465, false for other ports
+    auth: auth,
+  })
+  const maxAttempts = 3
+  let attempt = 0
+
+  while (attempt < maxAttempts) {
+    try {
+      const info = await transporter.sendMail({
+        from: from,
+        to,
+        subject,
+        html: body,
+      })
+      return ok(info)
+    } catch (e) {
+      // TODO: guardar en el .log
+      console.error(e)
+      attempt++
+      if (attempt < maxAttempts) {
+        const delay = 5000 * attempt // 5s, 10s, 15s
+        await new Promise(r => setTimeout(r, delay))
+      } else {
+        return internalError(e, 'Hubo un problema al enviar el correo')
+      }
+    }
+  }
+
+  return internalError('Hubo un problema al enviar el correo')
+}
+
+export async function sendEmailVerfification(user: User) {
+  const token = newToken(user._id!, 'email-verification')
+  const url = `${appUrl}/verify-email?u=${user._id?.toHexString()}&t=${token}`
+  const to = [user.email]
+  const subject = 'Confirma tu cuenta en ' + appName
+
+  const body = `
+<h1>Bienvenido a ${appName}</h1>
+<p>Gracias por registrarte. Para completar tu registro, haz clic en el siguiente enlace:</p>
+<p>
+    <a href="${url}" 
+        style="display:inline-block;padding:10px 20px;background:#0069d9;color:#fff;
+              text-decoration:none;border-radius:5px;">
+        Confirmar mi correo
+    </a>
+</p>
+<p>Si no fuiste tú quien se registró, puedes ignorar este mensaje.</p>
+<p>Si no puedes hacer clic, copia y pega este enlace en tu navegador:</p>
+<p>${url}</p>
+<br>
+<p>Equipo de ${appName}</p>`
+
+  await sendEmail(to, subject, body)
+}

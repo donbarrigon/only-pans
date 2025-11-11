@@ -3,7 +3,7 @@ import { getCookie, getHeader } from 'h3'
 import { sessionHeaders, getSession } from './session'
 import { unauthorizedError } from '../error/error'
 import { type Session, can } from './session'
-import { ok, Result } from '../error/result'
+import { ok, type Result } from '../error/result'
 
 const minScore = process.env.SESSION_MIN_SCORE ? Number(process.env.SESSION_MIN_SCORE) : 3
 
@@ -17,7 +17,7 @@ export async function auth(event: H3Event, permission?: string): Promise<Result<
     const authHeader = getHeader(event, 'authorization')
     if (authHeader) {
       const parts = authHeader.split(' ')
-      if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      if (parts.length === 2 && parts[0]!.toLowerCase() === 'bearer') {
         token = parts[1]
       }
     }

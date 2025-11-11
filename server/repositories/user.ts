@@ -3,11 +3,22 @@ import { ok, okVoid, Result } from '#shared/utils/error/result'
 import { createUnprocessableEntityError, mongoError, mongoResultError } from '#shared/utils/error/error'
 import { coll } from './collections'
 import { User } from '#shared/types/models/user'
+import { QueryFindOptions, setQueryFindOptions } from '#shared/utils/db/filterFindOptions'
 
 const defaultRoles: string[] = ['user']
 const defaultPermissions: string[] = []
 const defaultAvatar: string = ''
 const defaultBanner: string = ''
+
+export async function UserGetAll(options: QueryFindOptions): Promise<Result<User[]>> {
+  try {
+    const cursor = coll.user.find()
+    setQueryFindOptions(cursor, options)
+    return ok(await cursor.toArray())
+  } catch (e) {
+    return mongoError(e)
+  }
+}
 
 export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
   try {
@@ -22,8 +33,8 @@ export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
         return createUnprocessableEntityError('nickname', 'El nickname ya existe')
       }
       return createUnprocessableEntityError([
-        { field: 'email', message: 'El email o nickname ya existen' },
-        { field: 'nickname', message: 'El email o nickname ya existen' },
+        { field: 'email', message: 'El email o nickname ya estan registrados' },
+        { field: 'nickname', message: 'El email o nickname ya estan registrados' },
       ])
     }
 
@@ -63,7 +74,7 @@ export async function updateUserEmail(user: User, email: string): Promise<Result
   try {
     const u = await coll.user.findOne({ email: email, _id: { $ne: user._id } })
     if (u) {
-      return createUnprocessableEntityError('email', 'El email ya existe')
+      return createUnprocessableEntityError('email', 'El email ya esta registrado')
     }
 
     const updatedAt = new Date()

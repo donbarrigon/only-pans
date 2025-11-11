@@ -3,7 +3,7 @@ import { decode } from '@msgpack/msgpack'
 import type { H3Event } from 'h3'
 import { readRawBody, createError } from 'h3'
 import { extensionCodec } from '../fetch/extensionCodec'
-import { err, ok, Result } from '../error/result'
+import { err, ok, type Result } from '../error/result'
 import { badRequestError } from '../error/error'
 
 /**

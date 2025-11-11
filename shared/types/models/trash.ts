@@ -1,4 +1,4 @@
-import { Collection, ObjectId, WithId } from 'mongodb'
+import { ObjectId, type WithId } from 'mongodb'
 
 export interface Trash<T extends Document = Document> {
   _id: ObjectId | undefined

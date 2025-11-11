@@ -2,7 +2,7 @@ import type { GenericSchema } from 'valibot'
 import { safeParse } from 'valibot'
 import { type H3Event, readBody, createError } from 'h3'
 import { badRequestError } from '../error/error'
-import { Result, ok, err } from '../error/result'
+import { type Result, ok, err } from '../error/result'
 
 /**
  * Valida el cuerpo de una petición en formato json
