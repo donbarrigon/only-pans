@@ -1,5 +1,5 @@
 import { createError, H3Error } from 'h3'
-import { Err, okVoid, Result } from './result'
+import { type Err, okVoid, type Result } from './result'
 
 // Map de mensajes estándar de errores HTTP
 const errorMessages: Record<number, string> = {
@@ -218,13 +218,22 @@ type FieldError = { field: string; message: string }
 export function createUnprocessableEntityError(field: string, message: string): Err
 export function createUnprocessableEntityError(data: FieldError[]): Err
 export function createUnprocessableEntityError(arg1: string | FieldError[], arg2?: string): Err {
-  const data: FieldError[] = Array.isArray(arg1) ? arg1 : [{ field: arg1, message: arg2 ?? errorMessages[422] }]
+  let data: FieldError[]
+  if (Array.isArray(arg1)) {
+    data = arg1
+  } else {
+    let msg: string = errorMessages[422] || 'Los datos enviados no son válidos'
+    if (arg2) {
+      msg = arg2
+    }
+    data = [{ field: arg1, message: msg }]
+  }
 
   return {
     value: undefined,
     error: createError({
       statusCode: 422,
-      statusMessage: 'Los datos enviados no son válidos',
+      statusMessage: errorMessages[422] || 'Los datos enviados no son válidos',
       data,
     }),
   }
