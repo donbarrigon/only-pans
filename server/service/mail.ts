@@ -3,6 +3,7 @@ import { User } from '~~/shared/types/models/user'
 import { newToken } from '../repositories/token'
 import { ok, Result } from '~~/shared/utils/error/result'
 import { internalError } from '~~/shared/utils/error/error'
+import { logError } from '~~/shared/utils/log/log'
 import SMTPTransport from 'nodemailer/lib/smtp-transport'
 
 const appName = process.env.APP_NAME ?? 'My App'
@@ -44,9 +45,15 @@ export async function sendEmail(
       })
       return ok(info)
     } catch (e) {
-      // TODO: guardar en el .log
-      console.error(e)
       attempt++
+      logError(
+        {
+          message: 'Hubo un problema al enviar el correo',
+          to: to,
+          subject: subject,
+        },
+        e
+      )
       if (attempt < maxAttempts) {
         const delay = 5000 * attempt // 5s, 10s, 15s
         await new Promise(r => setTimeout(r, delay))
@@ -55,7 +62,6 @@ export async function sendEmail(
       }
     }
   }
-
   return internalError('Hubo un problema al enviar el correo')
 }
 

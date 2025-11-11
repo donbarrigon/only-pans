@@ -47,51 +47,51 @@ const config: {
   logDays: process.env.LOG_DAYS ? Number(process.env.LOG_DAYS) : 7,
 }
 
-export async function logEmergency(msg: string | object, e?: Error): Promise<void> {
+export async function logEmergency(msg: string | object, e?: unknown): Promise<void> {
   if (LV_EMERGENCY > config.logLevel) return
   await save(LV_EMERGENCY, msg, e)
 }
 
-export async function logAlert(msg: string | object, e?: Error): Promise<void> {
+export async function logAlert(msg: string | object, e?: unknown): Promise<void> {
   if (LV_ALERT > config.logLevel) return
   await save(LV_ALERT, msg, e)
 }
 
-export async function logCritical(msg: string | object, e?: Error): Promise<void> {
+export async function logCritical(msg: string | object, e?: unknown): Promise<void> {
   if (LV_CRITICAL > config.logLevel) return
   await save(LV_CRITICAL, msg, e)
 }
 
-export async function logError(msg: string | object, e?: Error): Promise<void> {
+export async function logError(msg: string | object, e?: unknown): Promise<void> {
   if (LV_ERROR > config.logLevel) return
   await save(LV_ERROR, msg, e)
 }
 
-export async function logWarning(msg: string | object, e?: Error): Promise<void> {
+export async function logWarning(msg: string | object, e?: unknown): Promise<void> {
   if (LV_WARNING > config.logLevel) return
   await save(LV_WARNING, msg, e)
 }
 
-export async function logNotice(msg: string | object, e?: Error): Promise<void> {
+export async function logNotice(msg: string | object, e?: unknown): Promise<void> {
   if (LV_NOTICE > config.logLevel) return
   await save(LV_NOTICE, msg, e)
 }
 
-export async function logInfo(msg: string | object, e?: Error): Promise<void> {
+export async function logInfo(msg: string | object, e?: unknown): Promise<void> {
   if (LV_INFO > config.logLevel) return
   await save(LV_INFO, msg, e)
 }
 
-export async function logDebug(msg: string | object, e?: Error): Promise<void> {
+export async function logDebug(msg: string | object, e?: unknown): Promise<void> {
   if (LV_DEBUG > config.logLevel) return
   await save(LV_DEBUG, msg, e)
 }
 
-export async function logPrint(msg: string | object, e?: Error): Promise<void> {
+export async function logPrint(msg: string | object, e?: unknown): Promise<void> {
   await save(LV_OFF, msg, e)
 }
 
-async function save(lv: number, msg: string | object, e?: Error): Promise<void> {
+async function save(lv: number, msg: string | object, e?: unknown): Promise<void> {
   if (typeof msg === 'object') {
     msg = JSON.stringify(msg)
   } else {
@@ -112,7 +112,7 @@ async function save(lv: number, msg: string | object, e?: Error): Promise<void> 
   await appendFile(fileName, data, 'utf8')
 }
 
-function dumpError(e?: Error): string {
+function dumpError(e?: unknown): string {
   if (e instanceof Error) {
     const result: Record<string, unknown> = {}
 

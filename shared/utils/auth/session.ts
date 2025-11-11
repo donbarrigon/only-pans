@@ -2,10 +2,11 @@ import type { H3Event } from 'h3'
 import { getRequestIP, getRequestHeader } from 'h3'
 import { hexToken } from './token'
 import { decode, encode } from '@msgpack/msgpack'
+import { file, write } from 'bun'
 import { forbiddenError, internalError, unauthorizedError } from '../error/error'
 import { extensionCodec } from '../fetch/extensionCodec'
 import { ObjectId } from 'mongodb'
-import { ok, okVoid, Result } from '../error/result'
+import { ok, okVoid, type Result } from '../error/result'
 
 export interface ISessionUser {
   _id: ObjectId | undefined
@@ -92,7 +93,7 @@ async function saveToken(session: Session): Promise<Result<void>> {
   const encoded = encode(session, { extensionCodec })
   const filePath = tokenFilePath(session.token)
   try {
-    await Bun.write(filePath, encoded)
+    await write(filePath, encoded)
     return okVoid
   } catch (e) {
     return internalError(e, 'No pudimos crear tu sesión')
@@ -115,7 +116,7 @@ async function saveIndex(session: Session): Promise<Result<void>> {
 
   try {
     const encoded = encode(tokens)
-    await Bun.write(filePath, encoded)
+    await write(filePath, encoded)
     return okVoid
   } catch (e) {
     return internalError(e, `No se creó la sessión ${session.token}`)
@@ -125,11 +126,11 @@ async function saveIndex(session: Session): Promise<Result<void>> {
 export async function getUserTokens(userId: string): Promise<Result<string[]>> {
   const filePath = userFilePath(userId)
   try {
-    const file = Bun.file(filePath)
-    if (!(await file.exists())) {
+    const f = file(filePath)
+    if (!(await f.exists())) {
       return ok([])
     }
-    const buffer = await file.bytes()
+    const buffer = await f.bytes()
     const decoded = decode(buffer) as string[]
     return ok(decoded)
   } catch (e) {
@@ -139,9 +140,9 @@ export async function getUserTokens(userId: string): Promise<Result<string[]>> {
 
 export async function getSession(id: string): Promise<Result<Session>> {
   const filePath = tokenFilePath(id)
-  const file = Bun.file(filePath)
+  const f = file(filePath)
 
-  if (!(await file.exists())) {
+  if (!(await f.exists())) {
     return unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
   }
 
@@ -149,15 +150,15 @@ export async function getSession(id: string): Promise<Result<Session>> {
   let decoded: Session
 
   try {
-    buffer = await file.bytes()
+    buffer = await f.bytes()
     decoded = decode(buffer, { extensionCodec }) as Session
   } catch (e) {
-    await file.unlink()
+    await f.unlink()
     return unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
   }
 
   if (decoded.expiresAt < new Date()) {
-    await file.unlink()
+    await f.unlink()
     return unauthorizedError('La sesión ha expirado, por favor inicia sesión nuevamente')
   }
 
@@ -179,9 +180,9 @@ export async function destroySession(session: Session): Promise<Result<void>> {
     return r
   }
   try {
-    const file = Bun.file(filePath)
-    if (await file.exists()) {
-      await file.unlink()
+    const f = file(filePath)
+    if (await f.exists()) {
+      await f.unlink()
     }
     return okVoid
   } catch (e) {
@@ -200,7 +201,7 @@ async function removeIndex(token: string, userId: string): Promise<Result<void>>
     const filePath = userFilePath(userId)
     try {
       const encoded = encode(tokens)
-      await Bun.write(filePath, encoded)
+      await write(filePath, encoded)
     } catch (e) {
       return internalError(e, `Hubo un problema al remover el índice de la sesión`)
     }

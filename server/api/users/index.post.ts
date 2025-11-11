@@ -6,6 +6,7 @@ import { responseError, responseOk } from '~~/shared/utils/response/json'
 import { hashPasswordService } from '~~/server/service/user'
 import { CREATE_ACTION, createHistory } from '~~/server/repositories/history'
 import { coll } from '~~/server/repositories/collections'
+import { sendEmailVerfification } from '~~/server/service/mail'
 
 export default defineEventHandler(async event => {
   const dto = await validateBody(event, UserStore)
@@ -30,6 +31,8 @@ export default defineEventHandler(async event => {
   }
 
   setCookie(event, 'session', session.value.token, getCookieSerializeOptionsForSession())
+
+  sendEmailVerfification(user.value)
 
   createHistory(coll.user, user.value._id, CREATE_ACTION)
 
