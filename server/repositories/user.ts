@@ -67,7 +67,7 @@ export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
       },
       roles: defaultRoles,
       permissions: defaultPermissions,
-      emailVerifiedAt: undefined,
+      emailVerifiedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: undefined,
@@ -107,7 +107,7 @@ export async function updateUserEmail(user: User, email: string): Promise<Result
     }
 
     const updatedAt = new Date()
-    const result = await coll.user.updateOne({ _id: user._id }, { $set: { email, updatedAt } })
+    const result = await coll.user.updateOne({ _id: user._id }, { $set: { email, emailVerifiedAt: null, updatedAt } })
     const r = mongoResultError(result)
     if (r.error) {
       return r
@@ -143,13 +143,13 @@ export async function updateUserProfile(user: User, dto: UserUpdateProfileOutput
 
     const changes: Changes = {
       _id: user._id!,
-      old: {},
-      new: {},
+      old: { profile: {} },
+      new: { profile: {} },
     }
 
     if (user.profile.name !== dto.name) {
-      changes.old.name = user.profile.name
-      changes.new.name = dto.name
+      changes.old.profile.name = user.profile.name
+      changes.new.profile.name = dto.name
       user.profile.name = dto.name
     }
 

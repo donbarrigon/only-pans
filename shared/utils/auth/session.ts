@@ -190,6 +190,29 @@ export async function destroySession(session: Session): Promise<Result<void>> {
   }
 }
 
+export async function destroyAllSessions(userId: string): Promise<Result<void>> {
+  const tokens = await getUserTokens(userId)
+  if (tokens.error) {
+    return tokens
+  }
+  for (const token of tokens.value) {
+    const r = await removeIndex(token, userId)
+    if (r.error) {
+      return r
+    }
+    try {
+      const filePath = tokenFilePath(token)
+      const f = file(filePath)
+      if (await f.exists()) {
+        await f.unlink()
+      }
+    } catch (e) {
+      return internalError(e, `Hubo un problema al cerrar la sesión`)
+    }
+  }
+  return okVoid
+}
+
 async function removeIndex(token: string, userId: string): Promise<Result<void>> {
   const tokens = await getUserTokens(userId)
   if (tokens.error) {

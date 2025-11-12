@@ -67,7 +67,7 @@ export async function sendEmail(
 
 export async function sendEmailVerfification(user: User) {
   const token = newToken(user._id!, 'email-verification')
-  const url = `${appUrl}/verify-email?u=${user._id?.toHexString()}&t=${token}`
+  const url = `${appUrl}/users/verify-email?u=${user._id?.toHexString()}&t=${token}`
   const to = [user.email]
   const subject = 'Confirma tu cuenta en ' + appName
 
@@ -88,4 +88,29 @@ export async function sendEmailVerfification(user: User) {
 <p>Equipo de ${appName}</p>`
 
   await sendEmail(to, subject, body)
+}
+
+export async function sendEmailChangeRevert(user: User, oldEmail: string) {
+  const token = newToken(user._id!, 'change-email-revert')
+  const url = `${appUrl}/users/change-email-revert?u=${user._id?.toHexString()}&t=${token}`
+  const to = [oldEmail]
+  const subject = 'Su correo en ' + appName + ' ha sido actualizado'
+  const body = `
+<h1>Hola de nuevo en ${appName}</h1>
+<p>Queremos informarte que su dirección de correo fue actualizada recientemente.</p>
+<p>Nuevo correo: <strong>${user.email}</strong></p>
+<p>Si realizaste este cambio, no necesitas hacer nada.</p>
+<p>Pero si <strong>NO fuiste tú</strong>, puedes revertir el cambio haciendo clic en el siguiente enlace:</p>
+<p>
+    <a href="${url}" 
+        style="display:inline-block;padding:10px 20px;background:#dc3545;color:#fff;
+              text-decoration:none;border-radius:5px;">
+        Revertir cambio de correo
+    </a>
+</p>
+<p>Si no puedes hacer clic, copia y pega este enlace en tu navegador:</p>
+<p>${url}</p>
+<br>
+<p>Equipo de ${appName}</p>
+`
 }

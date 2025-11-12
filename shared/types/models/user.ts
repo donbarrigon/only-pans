@@ -13,7 +13,7 @@ export interface User {
   }
   roles: string[]
   permissions: string[]
-  emailVerifiedAt?: Date
+  emailVerifiedAt: Date | null
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date
