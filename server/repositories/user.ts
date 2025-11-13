@@ -221,14 +221,21 @@ export async function verifyUserEmail(user: User): Promise<Result<void>> {
   }
 }
 
-export async function deleteUser(id: ObjectId): Promise<Result<void>> {
+export async function deleteUser(id: string): Promise<Result<ObjectId>> {
   try {
-    const result = await coll.user.updateOne({ _id: id }, { $set: { deletedAt: new Date() } })
+    if (!id) {
+      return createUnprocessableEntityError('id', 'El id es requerido')
+    }
+    const oid = toObjectId(id)
+    if (oid.error) {
+      return oid
+    }
+    const result = await coll.user.updateOne({ _id: oid.value }, { $set: { deletedAt: new Date() } })
     const r = mongoResultError(result)
     if (r.error) {
       return r
     }
-    return okVoid
+    return oid //ok<ObjectId>(oid.value)
   } catch (e) {
     return mongoError(e)
   }
