@@ -1,6 +1,5 @@
 import { Collection, ObjectId } from 'mongodb'
-import { mongoError, mongoResultError } from '~~/shared/utils/error/error'
-import { okVoid, Result } from '~~/shared/utils/error/result'
+import { mongoResultError } from '~~/shared/utils/error/error'
 import { coll } from './collections'
 import { Changes } from '../../shared/types/models/history'
 import { logError } from '~~/shared/utils/log/log'
@@ -14,7 +13,7 @@ export async function createHistory<T extends Document>(
   collection: Collection<T>,
   userId: ObjectId | undefined,
   action: string,
-  changes?: Changes
+  changes: Changes
 ): Promise<void> {
   try {
     const result = await coll.history.insertOne({
@@ -32,5 +31,11 @@ export async function createHistory<T extends Document>(
     }
   } catch (e) {
     logError('Error al crear el historial', e)
+  }
+}
+
+export function voidChanges(id: ObjectId): Changes {
+  return {
+    _id: id,
   }
 }

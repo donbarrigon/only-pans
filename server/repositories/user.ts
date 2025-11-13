@@ -1,12 +1,19 @@
 import { UserStoreOutput } from '#shared/validators/user/UserStore'
 import { UserUpdateProfileOutput } from '#shared/validators/user/UserUpdateProfile'
 import { ok, okVoid, type Result } from '#shared/utils/error/result'
-import { createUnprocessableEntityError, mongoError, mongoResultError, notFoundError } from '#shared/utils/error/error'
+import {
+  createUnprocessableEntityError,
+  internalError,
+  mongoError,
+  mongoResultError,
+  notFoundError,
+} from '#shared/utils/error/error'
 import { coll } from './collections'
 import { User } from '#shared/types/models/user'
-import { QueryFindOptions, setQueryFindOptions } from '#shared/utils/db/mongo'
+import { QueryFindOptions, setQueryFindOptions, toObjectId } from '#shared/utils/db/mongo'
 import { ObjectId } from 'mongodb'
 import { Changes } from '~~/shared/types/models/history'
+import bcrypt from 'bcrypt'
 
 const defaultRoles: string[] = ['user']
 const defaultPermissions: string[] = []
@@ -25,8 +32,12 @@ export async function getAllUsers(options: QueryFindOptions): Promise<Result<Use
 
 export async function getUserByHexId(id: string): Promise<Result<User>> {
   try {
-    const oid = ObjectId.createFromHexString(id)
-    const user = await coll.user.findOne({ _id: oid })
+    const oid = toObjectId(id)
+    if (oid.error) {
+      return oid
+    }
+
+    const user = await coll.user.findOne({ _id: oid.value })
     if (!user) {
       return notFoundError('No se encontro el usuario')
     }
@@ -54,10 +65,15 @@ export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
       ])
     }
 
+    const hp = await hashPassword(dto.password)
+    if (hp.error) {
+      return hp
+    }
+
     const user: User = {
       _id: undefined,
-      email: dto.email,
-      password: dto.password,
+      email: dto.email.toLowerCase().trim(),
+      password: hp.value,
       profile: {
         name: dto.name,
         nickname: dto.nickname,
@@ -67,7 +83,7 @@ export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
       },
       roles: defaultRoles,
       permissions: defaultPermissions,
-      emailVerifiedAt: null,
+      emailVerifiedAt: undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: undefined,
@@ -88,6 +104,7 @@ export async function createUser(dto: UserStoreOutput): Promise<Result<User>> {
 
 export async function updateUserEmail(user: User, email: string): Promise<Result<Changes>> {
   try {
+    email = email.toLowerCase().trim()
     if (user.email === email) {
       return createUnprocessableEntityError('email', 'El email ya esta registrado')
     }
@@ -107,13 +124,20 @@ export async function updateUserEmail(user: User, email: string): Promise<Result
     }
 
     const updatedAt = new Date()
-    const result = await coll.user.updateOne({ _id: user._id }, { $set: { email, emailVerifiedAt: null, updatedAt } })
+    const result = await coll.user.updateOne(
+      { _id: user._id },
+      {
+        $set: { email, updatedAt },
+        $unset: { emailVerifiedAt: '' },
+      }
+    )
     const r = mongoResultError(result)
     if (r.error) {
       return r
     }
 
     user.email = email
+    user.emailVerifiedAt = undefined
     user.updatedAt = updatedAt
     return ok(changes)
   } catch (e) {
@@ -121,15 +145,19 @@ export async function updateUserEmail(user: User, email: string): Promise<Result
   }
 }
 
-export async function updateUserPassword(user: User, hashPassword: string): Promise<Result<void>> {
+export async function updateUserPassword(user: User, password: string): Promise<Result<void>> {
+  const hp = await hashPassword(password)
+  if (hp.error) {
+    return hp
+  }
   const updatedAt = new Date()
-  const result = await coll.user.updateOne({ _id: user._id }, { $set: { password: hashPassword, updatedAt } })
+  const result = await coll.user.updateOne({ _id: user._id }, { $set: { password: hp.value, updatedAt } })
   const r = mongoResultError(result)
   if (r.error) {
     return r
   }
 
-  user.password = hashPassword
+  user.password = hp.value
   user.updatedAt = updatedAt
   return okVoid
 }
@@ -141,10 +169,10 @@ export async function updateUserProfile(user: User, dto: UserUpdateProfileOutput
       return createUnprocessableEntityError('nickname', 'El nickname ya esta registrado')
     }
 
-    const changes: Changes = {
+    const changes = {
       _id: user._id!,
-      old: { profile: {} },
-      new: { profile: {} },
+      old: { profile: {} as Record<string, any> },
+      new: { profile: {} as Record<string, any> },
     }
 
     if (user.profile.name !== dto.name) {
@@ -154,14 +182,14 @@ export async function updateUserProfile(user: User, dto: UserUpdateProfileOutput
     }
 
     if (user.profile.nickname !== dto.nickname) {
-      changes.old.nickname = user.profile.nickname
-      changes.new.nickname = dto.nickname
+      changes.old.profile.nickname = user.profile.nickname
+      changes.new.profile.nickname = dto.nickname
       user.profile.nickname = dto.nickname
     }
 
     if (user.profile.phone !== dto.phone) {
-      changes.old.phone = user.profile.phone
-      changes.new.phone = dto.phone
+      changes.old.profile.phone = user.profile.phone
+      changes.new.profile.phone = dto.phone
       user.profile.phone = dto.phone
     }
 
@@ -176,5 +204,64 @@ export async function updateUserProfile(user: User, dto: UserUpdateProfileOutput
     return ok(changes)
   } catch (e) {
     return mongoError(e)
+  }
+}
+
+export async function verifyUserEmail(user: User): Promise<Result<void>> {
+  try {
+    const updatedAt = new Date()
+    const result = await coll.user.updateOne({ _id: user._id }, { $set: { emailVerifiedAt: updatedAt, updatedAt } })
+    const r = mongoResultError(result)
+    if (r.error) {
+      return r
+    }
+    return okVoid
+  } catch (e) {
+    return mongoError(e)
+  }
+}
+
+export async function deleteUser(id: ObjectId): Promise<Result<void>> {
+  try {
+    const result = await coll.user.updateOne({ _id: id }, { $set: { deletedAt: new Date() } })
+    const r = mongoResultError(result)
+    if (r.error) {
+      return r
+    }
+    return okVoid
+  } catch (e) {
+    return mongoError(e)
+  }
+}
+
+export async function restoreUser(id: string): Promise<Result<User>> {
+  try {
+    const oid = toObjectId(id)
+    if (oid.error) {
+      return oid
+    }
+
+    const result = await coll.user.updateOne({ _id: oid.value }, { $unset: { deletedAt: '' } })
+    const r = mongoResultError(result)
+    if (r.error) {
+      return r
+    }
+
+    const user = await coll.user.findOne({ _id: oid.value })
+    if (!user) {
+      return notFoundError('No se encontro el usuario')
+    }
+
+    return ok(user)
+  } catch (e) {
+    return mongoError(e)
+  }
+}
+
+async function hashPassword(password: string): Promise<Result<string>> {
+  try {
+    return ok(await bcrypt.hash(password, 10))
+  } catch (e) {
+    return internalError(e, 'No fue posible hashear la contraseña')
   }
 }

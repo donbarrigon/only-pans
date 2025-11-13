@@ -1,5 +1,5 @@
 import type { Collection, Db } from 'mongodb'
-import { MongoClient } from 'mongodb'
+import { MongoClient, ObjectId } from 'mongodb'
 import { getQuery, H3Event } from 'h3'
 import { ok, type Result } from '../error/result'
 import { badRequestError } from '../error/error'
@@ -48,7 +48,15 @@ export interface QueryFindOptions {
   sort: Sort
 }
 
-export function queryFindOptions(event: H3Event): Result<QueryFindOptions> {
+export function toObjectId(id: string): Result<ObjectId> {
+  try {
+    return ok(ObjectId.createFromHexString(id))
+  } catch (e) {
+    return badRequestError(`el id [${id}] no es valido`)
+  }
+}
+
+export function getQueryFindOptions(event: H3Event): Result<QueryFindOptions> {
   const q = getQuery(event)
   let per_page: number = 15
   let page: number = 1

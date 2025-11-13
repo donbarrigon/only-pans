@@ -3,8 +3,7 @@ import { validateBody } from '~~/shared/utils/validation/json'
 import { createUser } from '~~/server/repositories/user'
 import { sessionStart, getCookieSerializeOptionsForSession } from '~~/shared/utils/auth/session'
 import { responseError, responseOk } from '~~/shared/utils/response/json'
-import { hashPasswordService } from '~~/server/service/user'
-import { CREATE_ACTION, createHistory } from '~~/server/repositories/history'
+import { CREATE_ACTION, createHistory, voidChanges } from '~~/server/repositories/history'
 import { coll } from '~~/server/repositories/collections'
 import { sendEmailVerfification } from '~~/server/service/mail'
 
@@ -13,12 +12,6 @@ export default defineEventHandler(async event => {
   if (dto.error) {
     return responseError(event, dto)
   }
-
-  const hp = await hashPasswordService(dto.value.password)
-  if (hp.error) {
-    return responseError(event, hp)
-  }
-  dto.value.password = hp.value
 
   const user = await createUser(dto.value)
   if (user.error) {
@@ -31,10 +24,8 @@ export default defineEventHandler(async event => {
   }
 
   setCookie(event, 'session', session.value.token, getCookieSerializeOptionsForSession())
-
   sendEmailVerfification(user.value)
-
-  createHistory(coll.user, user.value._id, CREATE_ACTION)
+  createHistory(coll.user, user.value._id, CREATE_ACTION, voidChanges(user.value._id!))
 
   return responseOk(event, session.value)
 })

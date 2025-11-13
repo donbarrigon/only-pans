@@ -4,8 +4,7 @@ import { responseError, responseNoContent } from '~~/shared/utils/response/json'
 import { validateBody } from '~~/shared/utils/validation/json'
 import { UserUpdatePassword } from '~~/shared/validators/user/UserUpdatePassword'
 import { updateUserPassword } from '~~/server/repositories/user'
-import { hashPasswordService } from '~~/server/service/user'
-import { createHistory } from '~~/server/repositories/history'
+import { createHistory, voidChanges } from '~~/server/repositories/history'
 import { destroyAllSessions } from '~~/shared/utils/auth/session'
 import { coll } from '~~/server/repositories/collections'
 
@@ -26,18 +25,13 @@ export default defineEventHandler(async event => {
     return responseError(event, user)
   }
 
-  const hp = await hashPasswordService(dto.value.password)
-  if (hp.error) {
-    return responseError(event, hp)
-  }
-
-  const changes = await updateUserPassword(user.value, hp.value)
+  const changes = await updateUserPassword(user.value, dto.value.password)
   if (changes.error) {
     return responseError(event, changes)
   }
 
   destroyAllSessions(user.value._id!.toHexString())
-  createHistory(coll.user, session.value.user._id, 'update-password')
+  createHistory(coll.user, session.value.user._id, 'update-password', voidChanges(user.value._id!))
 
   return responseNoContent(event)
 })

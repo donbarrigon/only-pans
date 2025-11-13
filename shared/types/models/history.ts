@@ -11,6 +11,6 @@ export interface History {
 
 export type Changes = {
   _id: ObjectId
-  old: Record<string, any>
-  new: Record<string, any>
+  old?: Record<string, any>
+  new?: Record<string, any>
 }

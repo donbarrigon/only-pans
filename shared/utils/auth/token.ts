@@ -8,3 +8,13 @@ export function hexToken(): string {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
 }
+
+export function randomString(length = 8): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length)
+    result += chars[randomIndex]
+  }
+  return result
+}

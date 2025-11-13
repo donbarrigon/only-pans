@@ -8,4 +8,5 @@ export interface Token {
   metadata?: Record<string, string>
   createdAt: Date
   expiresAt: Date
+  deletedAt?: Date
 }

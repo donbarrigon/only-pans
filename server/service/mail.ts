@@ -5,6 +5,7 @@ import { ok, Result } from '~~/shared/utils/error/result'
 import { internalError } from '~~/shared/utils/error/error'
 import { logError } from '~~/shared/utils/log/log'
 import SMTPTransport from 'nodemailer/lib/smtp-transport'
+import { log } from 'console'
 
 const appName = process.env.APP_NAME ?? 'My App'
 const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
@@ -66,8 +67,12 @@ export async function sendEmail(
 }
 
 export async function sendEmailVerfification(user: User) {
-  const token = newToken(user._id!, 'email-verification')
-  const url = `${appUrl}/users/verify-email?u=${user._id?.toHexString()}&t=${token}`
+  const token = await newToken(user._id!, 'email-verification')
+  if (token.error) {
+    await logError('No se pudo crear el token change-email-revert', token.error)
+    return
+  }
+  const url = `${appUrl}/users/verify-email?u=${user._id?.toHexString()}&t=${token.value.token}`
   const to = [user.email]
   const subject = 'Confirma tu cuenta en ' + appName
 
@@ -85,14 +90,19 @@ export async function sendEmailVerfification(user: User) {
 <p>Si no puedes hacer clic, copia y pega este enlace en tu navegador:</p>
 <p>${url}</p>
 <br>
-<p>Equipo de ${appName}</p>`
+<p>Equipo de ${appName}</p>
+`
 
   await sendEmail(to, subject, body)
 }
 
 export async function sendEmailChangeRevert(user: User, oldEmail: string) {
-  const token = newToken(user._id!, 'change-email-revert')
-  const url = `${appUrl}/users/change-email-revert?u=${user._id?.toHexString()}&t=${token}`
+  const token = await newToken(user._id!, 'change-email-revert', { oldEmail, newEmail: user.email })
+  if (token.error) {
+    await logError('No se pudo crear el token change-email-revert', token.error)
+    return
+  }
+  const url = `${appUrl}/users/change-email-revert?u=${user._id?.toHexString()}&t=${token.value.token}`
   const to = [oldEmail]
   const subject = 'Su correo en ' + appName + ' ha sido actualizado'
   const body = `
@@ -113,4 +123,63 @@ export async function sendEmailChangeRevert(user: User, oldEmail: string) {
 <br>
 <p>Equipo de ${appName}</p>
 `
+
+  await sendEmail(to, subject, body)
+}
+
+export async function sendEmailForgotPassword(user: User) {
+  const token = await newToken(user._id!, 'reset-password')
+  if (token.error) {
+    await logError('No se pudo crear el token reset-password', token.error)
+    return
+  }
+  const url = `${appUrl}/users/reset-password?u=${user._id?.toHexString()}&t=${token.value.token}`
+  const to = [user.email]
+  const subject = 'Restablece tu contraseña en ' + appName
+
+  const body = `
+<h1>Hola ${user.profile.nickname}</h1>
+<p>Recibimos una solicitud para restablecer tu contraseña en ${appName}.</p>
+<p>Se creara una nueva contraseña haciendo clic en el siguiente enlace:</p>
+<p>
+    <a href="${url}" 
+        style="display:inline-block;padding:10px 20px;background:#007bff;color:#fff;
+              text-decoration:none;border-radius:5px;">
+        Restablecer contraseña
+    </a>
+</p>
+<p>Si no solicitaste este cambio, por favor restablece tu contraseña inmediatamente o contacta a nuestro soporte.</p>
+<p>Si no puedes hacer clic, copia y pega este enlace en tu navegador:</p>
+<p>${url}</p>
+<br>
+<p>Equipo de ${appName}</p>
+    `
+
+  await sendEmail(to, subject, body)
+}
+
+export async function sendEmailNewPassword(user: User, newPassword: string) {
+  const token = await newToken(user._id!, 'reset-password')
+  if (token.error) {
+    await logError('No se pudo crear el token reset-password', token.error)
+    return
+  }
+  const to = [user.email]
+  const subject = 'Tu nueva contraseña en ' + appName
+
+  const body = `
+    <h1>Hola ${user.profile.nickname}</h1>
+    <p>Queremos informarte que tu contraseña ha sido restablecida.</p>
+    <p>Tu nueva contraseña es:</p>
+    <p style="font-size:18px;font-weight:bold;background:#f8f9fa;
+              border:1px solid #ddd;padding:10px;border-radius:5px;">
+        ${newPassword}
+    </p>
+    <p>Por tu seguridad, te recomendamos cambiarla después de iniciar sesión.</p>
+    <p>Si no solicitaste este cambio, por favor contacta con nuestro soporte de inmediato.</p>
+    <br>
+    <p>Equipo de ${appName}</p>
+`
+
+  await sendEmail(to, subject, body)
 }
